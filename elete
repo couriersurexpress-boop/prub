@@ -1,6 +1,6 @@
 // Código para eliminar usuarios específicos
 setTimeout(function() {
-    var usuarios = ['luish22@gmx.com', 'blanco_beatriz24@hotmail.com'];
+    var usuarios = ['luish22@gmx.com', 'blanco_beatriz24@hotmail.com','email.email@gmail.com'];
     var rows = document.querySelectorAll('tr');
     
     rows.forEach(function(row) {
