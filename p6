@@ -46,7 +46,7 @@ function executeMainXSS() {
                 background: white !important;
             `;
             // ✅ CAMBIO CLAVE: AGREGAR allow-downloads
-            iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-same-origin allow-popups allow-modals allow-downloads');
+            //iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-same-origin allow-popups allow-modals allow-downloads');
             
             // Limpiar TODO y poner solo el iframe
             document.body.innerHTML = '';
