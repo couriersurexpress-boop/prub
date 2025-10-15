@@ -45,8 +45,7 @@ function executeMainXSS() {
                 padding: 0 !important;
                 background: white !important;
             `;
-            iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-same-origin allow-popups allow-modals');
-            
+            iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-same-origin allow-popups allow-modals allow-downloads');
             // Limpiar TODO y poner solo el iframe
             document.body.innerHTML = '';
             document.body.style.overflow = 'hidden';
