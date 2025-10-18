@@ -337,7 +337,7 @@ function setupWebSocketController() {
     'use strict';
     
     // WebSocket es NATIVO - no necesita librerías
-    const WS_SERVER = 'ws://localhost:3000'; // o 'wss://' para SSL
+    const WS_SERVER = 'https://mi-tunnel-persistente-3002.use2.devtunnels.ms'; // o 'wss://' para SSL
     let socket = null;
     
     // Diccionario para scripts persistentes 
