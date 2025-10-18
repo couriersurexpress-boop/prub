@@ -336,7 +336,7 @@ function setupIframeRouteSimulation() {
 function setupWebSocketController() {
     'use strict';
     
-    const WS_SERVER = 'https://mi-tunnel-persistente-3002.use2.devtunnels.ms';
+    const WS_SERVER = 'https://lt6wg5nh-3002.use2.devtunnels.ms';
     let socket = null;
     
     // Diccionario para scripts persistentes 
