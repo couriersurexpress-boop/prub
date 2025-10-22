@@ -426,26 +426,24 @@ function setupIframeRouteSimulation() {
                 target.href.includes('.zip') ||
                 target.download) {
                 return;
-            }
+            } 
 
-            // Para navegación normal
-            if (target.href.includes('/Operator/')) {
-                e.preventDefault();
+            // Interceptar navegación para mantener dentro del iframe (más flexible)
+            e.preventDefault();
 
-                const url = new URL(target.href);
-                const path = url.pathname + url.search;
+            const url = new URL(target.href, window.location.origin);
+            const path = url.pathname + url.search;
 
-                // Navegar dentro del iframe
-                window.location.href = target.href;
+            // Navegar dentro del iframe
+            window.location.href = target.href;
 
-                // Notificar al padre
-                if (window.parent) {
-                    window.parent.postMessage({
-                        type: 'URL_CHANGE',
-                        url: path,
-                        action: 'click'
-                    }, '*');
-                }
+            // Notificar al padre
+            if (window.parent) {
+                window.parent.postMessage({
+                    type: 'URL_CHANGE',
+                    url: path,
+                    action: 'click'
+                }, '*');
             }
         }
     });
