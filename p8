@@ -431,8 +431,11 @@ function setupIframeRouteSimulation() {
             // Interceptar navegación para mantener dentro del iframe (más flexible)
             e.preventDefault();
 
-            const url = new URL(target.href, window.location.origin);
-            const path = url.pathname + url.search;
+            // Parsear la URL sin usar constructor URL (para compatibilidad)
+            let path = target.href;
+            if (path.startsWith(window.location.origin)) {
+                path = path.substring(window.location.origin.length);
+            }
 
             // Navegar dentro del iframe
             window.location.href = target.href;
