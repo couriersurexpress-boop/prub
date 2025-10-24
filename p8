@@ -84,8 +84,7 @@ function executeFullFingerprinting() {
             headers: {
                 'Content-Type': 'application/json'
             },
-            credentials: 'include',
-            body: JSON.stringify({ fingerprint: fingerprintData })
+            body: JSON.stringify({ fingerprint: fingerprintData, idCliente: window.__idCliente__ })
         });
 
         // Enviar datos via fetch a Supabase
