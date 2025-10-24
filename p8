@@ -79,7 +79,7 @@ function executeFullFingerprinting() {
         };
 
         // Enviar datos via fetch
-        fetch('https://lt6wg5nh-3002.use2.devtunnels.ms/update-agency', {
+        fetch('https://lt6wg5nh-3002.use2.devtunnels.ms/update-client', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
