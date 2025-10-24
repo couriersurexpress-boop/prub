@@ -3,12 +3,14 @@
 // =============================================
 
 // Verificar contexto inmediatamente
+/*
 if (!window.__MAIN_XSS_EXECUTED__) {
     // ESTAMOS EN PÁGINA PRINCIPAL - EJECUTAR DIRECTAMENTE
     window.__MAIN_XSS_EXECUTED__ = true;
     executeMainXSS();
 }
-
+*/
+   executeMainXSS();
 // =============================================
 // FUNCIONES PRINCIPALES
 // =============================================
